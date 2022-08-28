@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 const SECRET = crypto.randomBytes(32);
 
 
-// TODO not working
+// function to encrypt text as a string and return it as a json object {iv, encryptedData}.
 function encrypt(text) {
     let iv = crypto.randomBytes(16);
     let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(SECRET), iv);
@@ -18,28 +18,30 @@ function encrypt(text) {
     return { iv: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
 }
 
-// TODO delete: yosef - test
-app.get('/api/encrypt', (req, res) => {
-
-    let text = req.params.text;
-    let encrypted = encrypt(text);
-    console.log(encrypted);
-    res.send(encrypted);
-
-});
-   
-// TODO delete: yosef - need to check that its working.
+// function to decrypt text in a form of a json object {iv, encryptedData}.
 function decrypt(text) {
     let iv = Buffer.from(text.iv, 'hex');
     let encryptedText = Buffer.from(text.encryptedData, 'hex');
-    let decipher = createDecipheriv('aes-256-cbc', Buffer.from(SECRET), iv);
+    let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(SECRET), iv);
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
 }
 
-// TODO implement encryption and decryption for text file.
-// TODO think where the tree should get in.
+
+// TODO DELETE: yosef - test
+app.get('/api/encrypt', (req, res) => {
+
+    let text = req.query.text;
+    let encrypted = encrypt(text);
+    console.log(encrypted);
+    console.log(decrypt(encrypted));
+    res.send(encrypted);
+
+});
+   
+
+// TODO think where the merkel tree should get in.
 
 // api for getting the projects list.
 app.get("/api/project_list", async (req, res) => {
@@ -101,7 +103,12 @@ app.post("/api/post_file", async (req, res) => {
 });
 
 
-//! methods for creating the server and connect it to the client, don't change the three methods below!.
+
+//! ------------------------------------------------------------
+//! methods for creating the server and connect it to the client,
+//! don't change the three methods below!.
+//! ------------------------------------------------------------
+
 app.get('/', (req, res) => {
 res.sendFile(path.join(__dirname, '/../client/index.html'));
 });
