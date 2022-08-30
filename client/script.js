@@ -1,19 +1,82 @@
 server = 'http://localhost:3001';
+SECRET = null;
+USB_FILE = null;
+
 
 $(document).ready(() => {
 
-    // Initialize the page
-
-    initPage();
+    // hide the pull and push btns.
+    $('#pull-btn, #push-btn').hide();
+    $('#code-body').hide();
 
 });
 
-async function initPage() {
+// on uploading the file, update hte USB_FILE variable.
+function updateUSBFile(event) {
+    USB_FILE = $("#USBFile")[0].files[0];
+}
 
-    $('#code-body').hide();
+async function Authenticate() {
+    
+    if (USB_FILE == null) {
+        $('#error-msg').text("pls Connect your company USB identifier").show();
+        return;
+    }
 
-    // show the project list in the modal
-    await showProjectList();
+    // turn the USB file into a json object.
+    const employee_secret = JSON.parse(await USB_FILE.text());
+
+    // get the secret from the json
+    SECRET = employee_secret.secret;
+
+    // encrypt the secret with the server public key.
+    const encryptedSecret = await encryptWithServerPublicKey(SECRET);
+
+    // authenticate the user with the server.
+    const userName = await $.ajax({
+        data: {
+            "secret": encryptedSecret
+        },
+        type: 'GET',
+        url: `${server}/api/authenticate`
+    });
+
+
+    // if the user is authenticated, then init the page.
+    if (userName) {
+
+        // hide the authentication div
+        $('#input-area, #text, #auth-btn, #error-msg').hide();
+
+        // show pull and push buttons.
+        $('#pull-btn, #push-btn').show();
+
+        // change the user name to the authenticated user.
+        $('#Title').text(`Hi ${userName}, you are authenticated.`);
+
+        $('#authentication-card').toggleClass('text-bg-success');
+        $('#authentication-card').toggleClass('text-bg-light');
+
+    }
+
+    // if the user is not authenticated, then show the error message.
+    else {
+
+        $('#error-msg').text("User not permitted!!").show();
+
+    }
+
+}
+
+async function encryptWithServerPublicKey(text) {
+
+    //? maybe we will save the public key after init connection?
+    // get the server public key from the server.
+    const serverPublicKey = await $.get(`${server}/api/public_key`);
+    
+    // encrypt the text with the server public key with aes-256-cbc.
+    return CryptoJS.AES.encrypt(text, serverPublicKey).toString();
+
 
 }
 
@@ -74,6 +137,9 @@ async function get_file(projectName, fileName) {
     // hide the modal
     $('#choose-file-modal').modal('hide');
 
+    // decrypt the file
+    file = decrypt(file);
+
     // open the file in the editor
     $('#code').html(file);
     $('#card-header').text(fileName);
@@ -82,3 +148,24 @@ async function get_file(projectName, fileName) {
 
 
 }
+
+// decrypt text with the secret key with aes-256-cbc.
+function decryptText(text) {
+
+    // decrypt the text with the secret key with aes-256-cbc.
+    return CryptoJS.AES.decrypt(text, SECRET).toString(CryptoJS.enc.Utf8);
+
+}
+
+// function decrypt({encryptedText, initVector}) {
+
+//     // create the decryption object.
+//     const decipher = crypto.createDecipheriv("aes-256-cbc", SECRET, initVector);
+
+//     // update the decryption object with the encrypted text.
+//     let decryptedData = decipher.update(encryptedText, "hex", "utf-8");
+
+//     // finalize the decryption object with the initial vector.
+//     return decryptedData + decipher.final("utf8");
+
+// }

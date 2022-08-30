@@ -28,21 +28,6 @@ function decrypt(text) {
     return decrypted.toString();
 }
 
-
-// TODO DELETE: yosef - test
-app.get('/api/encrypt', (req, res) => {
-
-    let text = req.query.text;
-    let encrypted = encrypt(text);
-    console.log(encrypted);
-    console.log(decrypt(encrypted));
-    res.send(encrypted);
-
-});
-   
-
-// TODO think where the merkel tree should get in.
-
 // api for getting the projects list.
 app.get("/api/project_list", async (req, res) => {
 
@@ -102,6 +87,37 @@ app.post("/api/post_file", async (req, res) => {
 
 });
 
+// api for getting specific file from specific project.
+app.get("api/authenticate", async (req, res) => {
+
+    // TODO the secret will be encrypted with the public key of the server - need to decrypt it.
+
+    // get the employee from the req query  
+    const employee = validateSecret(req.query.secret);
+
+    // if the employee is found, return success message with the employee name.
+    if (employee)
+        return res.send({ success: true, name: employee.name });
+
+    // if the employee is not found, return error message.
+    return res.send({ success: false });
+
+});
+
+// method for validate the secret key.
+function validateSecret(secret) {
+
+    // read the employees file.
+    const employees = JSON.parse(fs.readFileSync(path.join(__dirname, 'employees.json')));
+
+    // loop over the employees and check if the secret key is valid.
+    const employee = employees.find(employee => employee.secret === secret);
+
+    // return the employee name if the secret is valid.
+    return employee? employee.name : null;
+
+}
+
 
 
 //! ------------------------------------------------------------
@@ -110,13 +126,13 @@ app.post("/api/post_file", async (req, res) => {
 //! ------------------------------------------------------------
 
 app.get('/', (req, res) => {
-res.sendFile(path.join(__dirname, '/../client/index.html'));
+    res.sendFile(path.join(__dirname, '/../client/index.html'));
 });
 
 app.get('/script.js', (req, res) => {
-res.sendFile(path.join(__dirname, '/../client/script.js'));
+    res.sendFile(path.join(__dirname, '/../client/script.js'));
 });
 
 app.listen(PORT, () => {
-console.log(`Server listening on ${PORT}`);
+    console.log(`Server listening on ${PORT}`);
 });

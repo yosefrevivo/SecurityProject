@@ -26,15 +26,35 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             </ul>
             <form class="d-flex" role="search">
-              <button class="btn btn-outline-success mx-2 px-3" type="button" onclick="showProjectList()">Pull</button>
-              <button class="btn btn-outline-primary px-3" type="button">Push</button>
+              <button id="pull-btn" class="btn btn-outline-success mx-2 px-3" type="button" onclick="showProjectList()">Pull</button>
+              <button id="push-btn" class="btn btn-outline-primary px-3" type="button">Push</button>
             </form>
           </div>
         </div>
       </nav>
 
-    <!--- Page Body -->
-    <container id="code-body">
+    <!--- Authenticate card -->
+    <div class="container mt-5">
+      <div id="authentication-card" class="card text-center text-bg-light">
+        <div class="card-header">
+          USER Authentication
+        </div>
+        <div class="card-body">
+          <h5 id="Title" class="card-title">Welcome to SafeCode</h5>
+          <p id="text" class="card-text">If you want to see your company code, change, edit or add new files, Please log in using your personal company USB.</p>
+          <div id="input-area" class="m-3">
+            <input class="form-control" type="file" id="USBFile" text="upload USB authenticator file" onchange="updateUSBFile(this)">
+          </div>
+          <button id="auth-btn" class="btn btn-primary" type="button" onclick="Authenticate()">Authenticate</button>
+          <div id="error-msg" class="btn btn-outline">
+          <span id="error-msg" class="badge text-bg-danger d-none">Authentication failed! pls check that your company usb connected and then try again.</span>
+
+        </div>
+      </div>
+    </div>
+
+
+    <div class="container" id="code-body">
       <div class="card mx-5">
         <div class="card-header">
         </div>
@@ -66,6 +86,28 @@
         </div>
         </div>
     </div>
+
+    
+    <!-- Pull modal -->
+    <div class="modal fade" id="push-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+          <h5 class="modal-title" id="staticBackdropLabel">Push new Content</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+
+              <ol id="projects-list" class="list-group"></ol>
+
+          </div>
+          <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Push</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+      </div>
+      </div>
+  </div>
 
 
 </body>
