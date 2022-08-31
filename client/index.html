@@ -96,10 +96,14 @@
           <div class="modal-body">
               <ol id="projects-push-list" class="list-group"></ol>
               <div class="m-3">
-                <input class="form-control d-none" type="file" id="file-to-push" text="Please upload file" onchange="updateFileToPush(this)">
+                <input class="form-control d-none" type="file" id="file-to-push" text="Please upload file" onchange="updateFileToPushs(this)">
               </div>
           </div>
           <div class="modal-footer">
+            <button id="loading-btn" class="btn btn-primary d-none" type="button" disabled>
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Loading...
+            </button>
           <button id="add-file-btn" type="button" class="btn btn-primary d-none">Add file</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>

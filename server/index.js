@@ -7,6 +7,7 @@
 
 import {MockCertificateChain, MockRootCertificate} from "./models/certificates/MockCertificateChain.js";
 import express from "express";
+import bodyParser from "body-parser";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
@@ -19,6 +20,7 @@ const __dirname = dirname(__filename);
 
 
 const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
 const PORT = process.env.PORT || 3001;
 const SECRET = crypto.randomBytes(32);
 
@@ -94,23 +96,35 @@ app.get("/api/get_file", async (req, res) => {
 });
 
 // method to post file to specific project in the server
-app.post("/api/post_file", async (req, res) => {
+app.post("/api/update_file_in_project", async (req, res) => {
+
+    // extract the data from the request.
+    const {projectName, fileName, fileData, secret} = req.body;
+
+    // TODO need to decrypt the secret.
+
+    // validate the secret key.
+    const employeeName = validateSecret(secret);
+
+    // if the secret key is not valid, return error.
+    if (!employeeName) {
+        return res.status(401).send("Unauthorized");
+    }
 
     // joining path of directory
-    const directoryPath = path.join(__dirname, 'Projects', req.query.projectName);
-    const filePath = path.join(directoryPath, req.query.fileName);
+    const directoryPath = path.join(__dirname, 'Projects', projectName);
+    const filePath = path.join(directoryPath, fileName);
 
     // check if the directory exists, and create the directory if it doesn't exist
-    if (!fs.existsSync(directoryPath)) fs.mkdirSync(directoryPath);
+    if (!fs.existsSync(directoryPath)) return res.status(404).send("Project not found");
 
     // write the file to the directory
-    fs.writeFileSync(filePath, req.body.file);
+    fs.writeFileSync(filePath, fileData);
 
     // return success message
-    return res.send('File uploaded successfully');
+    return res.send({message: "File updated successfully"});
 
 });
-
 
 // api for getting the server pub key.
 app.get("/api/get_server_pub_key", async (req, res) => {
