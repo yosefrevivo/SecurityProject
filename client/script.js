@@ -17,6 +17,12 @@ function updateUSBFile(event) {
 }
 
 async function Authenticate() {
+    // Before the authentication, we need to get the public key from the server and verify the certificate chain.
+    let isValid = await validate_certificate_chain();
+    if (!isValid) {
+        $('#error-msg').text("Untrusted server - the certificate chain is invalid").show();
+        return;
+    }
 
     if (USB_FILE == null) {
         $('#error-msg').text("pls Connect your company USB identifier").show();
@@ -77,11 +83,6 @@ async function encryptWithServerPublicKey(text) {
     // encrypt the text with the server public key with aes-256-cbc.
     return CryptoJS.AES.encrypt(text, serverPublicKey).toString();
 
-    let isValid = await validate_certificate_chain();
-    if (!isValid) {
-        alert("Invalid certificate chain - untrusted server!");
-        return;
-    }
     // show the project list in the modal
     await showProjectList();
 

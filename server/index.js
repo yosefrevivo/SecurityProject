@@ -203,12 +203,10 @@ app.get('/', (req, res) => {
     // Return index.html file
     console.log('index.html requested');
     res.sendFile(path.join(__dirname, '/../client/index.html'));
-    res.sendFile(path.join(__dirname, '/../client/index.html'));
 });
 
 app.get('/script.js', (req, res) => {
     console.log('script.js requested');
-    res.sendFile(path.join(__dirname, '/../client/script.js'));
     res.sendFile(path.join(__dirname, '/../client/script.js'));
 });
 
