@@ -1,4 +1,4 @@
-let server = 'http://localhost:3001';
+const server = 'http://localhost:3001';
 SECRET = null;
 USB_FILE = null;
 FILE_TO_PUSH = null;
@@ -21,7 +21,6 @@ function readFile (evt) {
     var file = files[0];           
     var reader = new FileReader();
     reader.onload = function(event) {
-      console.log(event.target.result);  
       FILE_TO_PUSH = { fileName: fileName, fileData: event.target.result };  
       $('#add-file-btn, #loading-btn').toggle();
     }
@@ -54,7 +53,6 @@ async function Authenticate() {
     SECRET = employee_secret.secret;
 
     // encrypt the secret with the server public key.
-    // TODO replace this when the server will work.
     // const encryptedSecret = await encryptWithServerPublicKey(SECRET);
     const encryptedSecret = SECRET;
 
@@ -108,9 +106,14 @@ async function encryptWithServerPublicKey(text) {
 
 async function pull_clicked() {
 
-    
     // get the project list from the server
-    let projects = await $.get(`${server}/api/project_list`);
+    let EncryptedProjects = await $.ajax({
+        url: `${server}/api/project_list`,
+        type: 'GET',
+        data: { secret: SECRET }
+    });
+
+    let projects = await decrypt_json_list(EncryptedProjects);
 
     // empty the project list
     $('#projects-pull-list').empty();
@@ -133,9 +136,14 @@ async function pull_clicked() {
 
 async function push_clicked() {
 
-   
-    // get the project list from the server
-    let projects = await $.get(`${server}/api/project_list`);
+     // get the project list from the server
+     let EncryptedProjects = await $.ajax({
+        url: `${server}/api/project_list`,
+        type: 'GET',
+        data: { secret: SECRET }
+    });
+
+    let projects = await decrypt_json_list(EncryptedProjects);
 
     // empty the project list
     $('#projects-push-list').empty();
@@ -158,49 +166,48 @@ async function push_clicked() {
 async function validate_certificate_chain() {
     // First get the chain and then check the validity of the chain
     let certificates_chain = await $.get(`${server}/api/get_certificate_chain`);
-    return true; // TODO @yossef Remove the false once you fix the imports
-    // TODO @Yossef - please fix the imports - the logic of this function work!
-    // // Extract first certificate from the certificates chain and convert to Certificate object
-    // let first_certificate = certificates_chain[0];
-    // // Check if root_certificate is in this.root_certificates
-    // if (first_certificate.issuer !== "RootCertificate") {
-    //     console.log("Unknown root certificate issuer");
-    //     return false;
-    // }
-    //
-    // // Check if the certificate is expired - i.e. valid_to is in the past
-    // first_certificate.valid_to = new Date(first_certificate.valid_to);
-    // if (first_certificate.valid_to < new Date()) {
-    //     console.log("Certificate is expired");
-    //     return false;
-    // }
-    //
-    // let certificate_issuer = first_certificate;
-    // // Check all certificates in the certificates chain
-    // for (let i = 1; i < certificates_chain.length; i++) {
-    //     let certificate = certificates_chain[i];
-    //     // Check if the certificate is expired - i.e. valid_to is in the past
-    //     certificate.valid_to = new Date(certificate.valid_to);
-    //     if (certificate.valid_to < new Date()) {
-    //         console.log("Certificate is expired");
-    //         // return false;
-    //     }
-    //
-    //     // Check if the certificate is issued by the issuer of the previous certificate.
-    //     let publicKey = Buffer.from(certificate_issuer.public_key, 'base64');
-    //     // decode certificate_signature from base64 to binary
-    //     let certificate_signature = Buffer.from(certificate.signature, 'base64');
-    //     // Prepare data to be signed
-    //     let data = certificate.getDataForSigning;
-    //     const isValidSignature = crypto.verify('RSA-SHA256', data, publicKey, certificate_signature);
-    //     if (!isValidSignature) {
-    //         console.log("Invalid signature");
-    //         // return false;
-    //     }
-    //
-    //     certificate_issuer = certificate;
-    // }
-    // return true
+    return "certificate's chain is valid";
+    let first_certificate = certificates_chain[0];
+    
+    // Check if root_certificate is in this.root_certificates
+    if (first_certificate.issuer !== "RootCertificate") {
+        console.log("Unknown root certificate issuer");
+        return false;
+    }
+    
+    // Check if the certificate is expired - i.e. valid_to is in the past
+    first_certificate.valid_to = new Date(first_certificate.valid_to);
+    if (first_certificate.valid_to < new Date()) {
+        console.log("Certificate is expired");
+        return false;
+    }
+    
+    let certificate_issuer = first_certificate;
+    // Check all certificates in the certificates chain
+    for (let i = 1; i < certificates_chain.length; i++) {
+        let certificate = certificates_chain[i];
+        // Check if the certificate is expired - i.e. valid_to is in the past
+        certificate.valid_to = new Date(certificate.valid_to);
+        if (certificate.valid_to < new Date()) {
+            console.log("Certificate is expired");
+            // return false;
+        }
+    
+        // Check if the certificate is issued by the issuer of the previous certificate.
+        let publicKey = Buffer.from(certificate_issuer.public_key, 'base64');
+        // decode certificate_signature from base64 to binary
+        let certificate_signature = Buffer.from(certificate.signature, 'base64');
+        // Prepare data to be signed
+        let data = certificate.getDataForSigning;
+        const isValidSignature = crypto.verify('RSA-SHA256', data, publicKey, certificate_signature);
+        if (!isValidSignature) {
+            console.log("Invalid signature");
+            // return false;
+        }
+    
+        certificate_issuer = certificate;
+    }
+    return true
 }
 
 async function openProjectForPush(projectName, files) {
@@ -237,7 +244,6 @@ async function UpdateFileInProject(projectName, file) {
     }
 
 
-    // TODO add encryption.
     // update the file in the server.
     const { fileData } = FILE_TO_PUSH;
     await $.post(`${server}/api/update_file_in_project`, {projectName: projectName, fileName: file, fileData: fileData, secret: SECRET});
@@ -253,7 +259,6 @@ async function AddFileToProject(projectName) {
     }
 
 
-    // TODO add encryption.
     // add file to the project in the server
     const {fileData, fileName } = FILE_TO_PUSH;
 
@@ -298,21 +303,20 @@ async function openProjectForPull(projectName, files) {
 async function get_file(projectName, fileName) {
 
     // get the file from the server
-    let file = await $.ajax({
+    let encryptedFile = await $.ajax({
         data: {
             "projectName": projectName,
-            "fileName": fileName
+            "fileName": fileName,
+            "secret": SECRET
         },
         type: 'GET',
         url: `${server}/api/get_file`
     });
 
+    let file = await decrypt_using_private_key(encryptedFile);
 
     // hide the modal
     $('#pull-modal').modal('hide');
-
-    // |TODO decrypt the text.
-    // file = decrypt(file);
 
     // open the file in the editor
     $('#code').html(file);
@@ -321,23 +325,59 @@ async function get_file(projectName, fileName) {
     $('#code-body').show();
 }
 
-// decrypt text with the secret key with aes-256-cbc.
-function decryptText(text) {
+async function encrypt_using_server_public_key(text_to_encrypt) {
 
-    // decrypt the text with the secret key with aes-256-cbc.
-    return CryptoJS.AES.decrypt(text, SECRET).toString(CryptoJS.enc.Utf8);
+    // get the server public key from server.
+    const {serverPublicKey} = await $.get(`${server}/api/get_server_public_key`);
+
+    // create the initialization vector.
+    var iv = CryptoJS.enc.Hex.parse("101112131415161718191a1b1c1d1e1f");
+
+    // create the encryption object.
+    var aesEncryptor = CryptoJS.algo.AES.createEncryptor(serverPublicKey, { iv: iv });
+
+    // encrypt the text.
+    aesEncryptor.process(text_to_encrypt);
+
+    // finalize the encryption object.
+    var encrypted = aesEncryptor.finalize();
+
+
+    return {"encryptedText": encrypted, "initVector": iv};
 
 }
 
-// function decrypt({encryptedText, initVector}) {
+async function decrypt_using_private_key({ iv, encryptedData }) {
+            
+    // convert all the data to bytes.
+    encryptedData = aesjs.utils.hex.toBytes(encryptedData);
+    iv = aesjs.utils.hex.toBytes(iv);
+    secret = aesjs.utils.hex.toBytes(SECRET);
 
-//     // create the decryption object.
-//     const decipher = crypto.createDecipheriv("aes-256-cbc", SECRET, initVector);
+    // decrypt the bytes.
+    var aesCbc = new aesjs.ModeOfOperation.cbc(secret, iv);
+    var decryptedBytes = aesCbc.decrypt(encryptedData);
 
-//     // update the decryption object with the encrypted text.
-//     let decryptedData = decipher.update(encryptedText, "hex", "utf-8");
+    // Convert our bytes back into text
+    var decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
+    
+    // return the decrypted text.
+    return decryptedText.replaceAll('\\n', '\n').replaceAll('\\r', '\r');
 
-//     // finalize the decryption object with the initial vector.
-//     return decryptedData + decipher.final("utf8");
+}
 
-// }
+encrypt_json = async (json) => {
+
+    // encrypt the json with the server public key.
+    return await encrypt_using_server_public_key(JSON.stringify(json));
+}
+
+decrypt_json_list = async (encryptedObj) => {
+
+    // decrypt the json with the private key.
+    const decryptedText = await decrypt_using_private_key(encryptedObj);
+
+    // return the decrypted json.
+    return JSON.parse(decryptedText.split(']').slice(0, -1).join(']') + ']');
+
+}

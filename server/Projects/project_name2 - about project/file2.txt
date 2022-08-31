@@ -54,7 +54,7 @@ async function Authenticate() {
     SECRET = employee_secret.secret;
 
     // encrypt the secret with the server public key.
-    // TODO replace this when the server will work.
+    //  replace this when the server will work.
     // const encryptedSecret = await encryptWithServerPublicKey(SECRET);
     const encryptedSecret = SECRET;
 
@@ -158,8 +158,8 @@ async function push_clicked() {
 async function validate_certificate_chain() {
     // First get the chain and then check the validity of the chain
     let certificates_chain = await $.get(`${server}/api/get_certificate_chain`);
-    return true; // TODO @yossef Remove the false once you fix the imports
-    // TODO @Yossef - please fix the imports - the logic of this function work!
+    return true; //  @yossef Remove the false once you fix the imports
+    //  @Yossef - please fix the imports - the logic of this function work!
     // // Extract first certificate from the certificates chain and convert to Certificate object
     // let first_certificate = certificates_chain[0];
     // // Check if root_certificate is in this.root_certificates
@@ -237,7 +237,7 @@ async function UpdateFileInProject(projectName, file) {
     }
 
 
-    // TODO add encryption.
+    //  add encryption.
     // update the file in the server.
     const { fileData } = FILE_TO_PUSH;
     await $.post(`${server}/api/update_file_in_project`, {projectName: projectName, fileName: file, fileData: fileData, secret: SECRET});
@@ -253,7 +253,7 @@ async function AddFileToProject(projectName) {
     }
 
 
-    // TODO add encryption.
+    //  add encryption.
     // add file to the project in the server
     const {fileData, fileName } = FILE_TO_PUSH;
 
@@ -307,7 +307,7 @@ async function get_file(projectName, fileName) {
     // hide the modal
     $('#pull-modal').modal('hide');
 
-    // |TODO decrypt the text.
+    // | decrypt the text.
     // file = decrypt(file);
 
     // open the file in the editor
