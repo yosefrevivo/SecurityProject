@@ -161,6 +161,37 @@ app.get('/api/get_certificate_chain', (req, res) => {
     // return true;
     res.send(MockCertificateChain);
 });
+// api for getting specific file from specific project.
+app.get("api/authenticate", async (req, res) => {
+
+    // TODO the secret will be encrypted with the public key of the server - need to decrypt it.
+
+    // get the employee from the req query
+    const employee = validateSecret(req.query.secret);
+
+    // if the employee is found, return success message with the employee name.
+    if (employee)
+        return res.send({ success: true, name: employee.name });
+
+    // if the employee is not found, return error message.
+    return res.send({ success: false });
+
+});
+
+// method for validate the secret key.
+function validateSecret(secret) {
+
+    // read the employees file.
+    const employees = JSON.parse(fs.readFileSync(path.join(__dirname, 'employees.json')));
+
+    // loop over the employees and check if the secret key is valid.
+    const employee = employees.find(employee => employee.secret === secret);
+
+    // return the employee name if the secret is valid.
+    return employee? employee.name : null;
+
+}
+
 
 
 //! ------------------------------------------------------------
@@ -172,10 +203,12 @@ app.get('/', (req, res) => {
     // Return index.html file
     console.log('index.html requested');
     res.sendFile(path.join(__dirname, '/../client/index.html'));
+    res.sendFile(path.join(__dirname, '/../client/index.html'));
 });
 
 app.get('/script.js', (req, res) => {
     console.log('script.js requested');
+    res.sendFile(path.join(__dirname, '/../client/script.js'));
     res.sendFile(path.join(__dirname, '/../client/script.js'));
 });
 
