@@ -1,12 +1,13 @@
 let server = 'http://localhost:3001';
 SECRET = null;
 USB_FILE = null;
+FILE_TO_PUSH = null;
 
 
 $(document).ready(() => {
 
     // hide the pull and push btns.
-    $('#pull-btn, #push-btn').hide();
+    $('#pull-btn, #push-btn, #error-msg').hide();
     $('#code-body').hide();
 
 });
@@ -14,6 +15,11 @@ $(document).ready(() => {
 // on uploading the file, update hte USB_FILE variable.
 function updateUSBFile(event) {
     USB_FILE = $("#USBFile")[0].files[0];
+}
+
+// on uploading the file, update hte USB_FILE variable.
+function updateFileToPush(event) {
+    FILE_TO_PUSH = $("#file-to-push")[0].files[0];
 }
 
 async function Authenticate() {
@@ -36,10 +42,12 @@ async function Authenticate() {
     SECRET = employee_secret.secret;
 
     // encrypt the secret with the server public key.
-    const encryptedSecret = await encryptWithServerPublicKey(SECRET);
+    // TODO replace this when the server will work.
+    // const encryptedSecret = await encryptWithServerPublicKey(SECRET);
+    const encryptedSecret = SECRET;
 
     // authenticate the user with the server.
-    const userName = await $.ajax({
+    const {success, name} = await $.ajax({
         data: {
             "secret": encryptedSecret
         },
@@ -49,7 +57,7 @@ async function Authenticate() {
 
 
     // if the user is authenticated, then init the page.
-    if (userName) {
+    if (success) {
 
         // hide the authentication div
         $('#input-area, #text, #auth-btn, #error-msg').hide();
@@ -58,10 +66,11 @@ async function Authenticate() {
         $('#pull-btn, #push-btn').show();
 
         // change the user name to the authenticated user.
-        $('#Title').text(`Hi ${userName}, you are authenticated.`);
+        $('#Title').text(`Hi ${name}, you are authenticated.`);
 
-        $('#authentication-card').toggleClass('text-bg-success');
-        $('#authentication-card').toggleClass('text-bg-light');
+        $('#authentication-card').addClass('text-bg-success');
+        $('#authentication-card').removeClass('text-bg-light');
+        $('#authentication-card').removeClass('text-bg-danger');
 
     }
 
@@ -78,28 +87,24 @@ async function encryptWithServerPublicKey(text) {
 
     //? maybe we will save the public key after init connection?
     // get the server public key from the server.
-    const serverPublicKey = await $.get(`${server}/api/public_key`);
+    const {serverPublicKey} = await $.get(`${server}/api/get_server_pub_key`);
 
-    // encrypt the text with the server public key with aes-256-cbc.
-    return CryptoJS.AES.encrypt(text, serverPublicKey).toString();
-
-    // show the project list in the modal
-    await showProjectList();
+    // encrypt the text with the server public key with RSA.
+    return CryptoJS.RSA.encrypt(text, serverPublicKey).toString();
 
 }
 
-async function showProjectList() {
+async function pull_clicked() {
 
-    $('#choose-project-modal').modal('show');
-
+    
     // get the project list from the server
     let projects = await $.get(`${server}/api/project_list`);
 
     // empty the project list
-    $('#projects-list').empty();
+    $('#projects-pull-list').empty();
 
-    $('#projects-list').append(projects.map(({name, about, projectName, files}) => `
-        <li class="btn btn-primary list-group-item d-flex justify-content-between align-items-start" onclick="openProject('${projectName}', '${files}')">
+    $('#projects-pull-list').append(projects.map(({name, about, projectName, files}) => `
+        <li class="btn btn-primary list-group-item d-flex justify-content-between align-items-start" onclick="openProjectForPull('${projectName}', '${files}')">
             <div class="ms-2 me-auto">
                 <div class="fw-bold">${name}</div>
                 ${about}
@@ -108,15 +113,40 @@ async function showProjectList() {
         </li>
     `));
 
-    // open boot strap modal for choosing a project
-    $('#choose-file-modal').modal('show');
+    // show the modal.
+    $('#pull-modal').modal('show');
+
+
+}
+
+async function push_clicked() {
+
+   
+    // get the project list from the server
+    let projects = await $.get(`${server}/api/project_list`);
+
+    // empty the project list
+    $('#projects-push-list').empty();
+
+    $('#projects-push-list').append(projects.map(({name, about, projectName, files}) => `
+        <li class="btn btn-primary list-group-item d-flex justify-content-between align-items-start" onclick="openProjectForPush('${projectName}', '${files}')">
+            <div class="ms-2 me-auto">
+                <div class="fw-bold">${name}</div>
+                ${about}
+            </div>
+            <div class="badge bg-primary rounded-pill my-auto">${files.length} files</div>
+        </li>
+    `));
+
+     // show the modal.
+     $('#push-modal').modal('show');
 
 }
 
 async function validate_certificate_chain() {
     // First get the chain and then check the validity of the chain
     let certificates_chain = await $.get(`${server}/api/get_certificate_chain`);
-    return false; // TODO @yossef Remove the false once you fix the imports
+    return true; // TODO @yossef Remove the false once you fix the imports
     // TODO @Yossef - please fix the imports - the logic of this function work!
     // // Extract first certificate from the certificates chain and convert to Certificate object
     // let first_certificate = certificates_chain[0];
@@ -161,13 +191,65 @@ async function validate_certificate_chain() {
     // return true
 }
 
-async function openProject(projectName, files) {
+async function openProjectForPush(projectName, files) {
 
     // empty the project list
-    $('#projects-list').empty();
+    $('#projects-push-list').empty();
 
     // append the files to the project list
-    $('#projects-list').append(files.split(',').map(name => `
+    $('#projects-push-list').append(files.split(',').map(name => `
+        <li class="list-group-item d-flex">
+            <div class="fw-bold me-auto">${name}</div>
+            <button class="btn btn-outline-primary" type="button" onclick="UpdateFileInProject('${projectName}', '${name}')">Update</div>
+        </li>
+    `));
+
+
+    // show the input and add file buttons.
+    $('#file-to-push, #add-file-btn').removeClass('d-none');
+
+    // change the click behavior of add new file button.
+    $('#add-file-btn').on('click', () => AddFileToProject(projectName));
+
+}
+
+async function UpdateFileInProject(projectName, files) {
+
+    // if FILE_TO_PUSH is empty, then show the error message.
+    if (!FILE_TO_PUSH) {
+        alert('pls upload file first');
+        return;
+    }
+
+
+    // TODO add encryption and secret key.
+    // update the file in the server.
+    await $.post(`${server}/api/update_file_in_project`, {projectName, fileName: files, file: FILE_TO_PUSH});
+
+}
+
+async function AddFileToProject(projectName) {
+
+    // if FILE_TO_PUSH is empty, then show the error message.
+    if (!FILE_TO_PUSH) {
+        alert('pls upload file first');
+        return;
+    }
+
+
+    // TODO add encryption and secret key.
+    // add file to the project in the server
+    await $.post(`${server}/api/add_file_to_project`, {projectName, file: FILE_TO_PUSH});
+
+}
+
+async function openProjectForPull(projectName, files) {
+
+    // empty the project list
+    $('#projects-pull-list').empty();
+
+    // append the files to the project list
+    $('#projects-pull-list').append(files.split(',').map(name => `
         <li class="btn btn-primary list-group-item d-flex justify-content-between align-items-start" onclick="get_file('${projectName}', '${name}')">
             <div class="ms-2 me-auto">
                 <div class="fw-bold">${name}</div>
@@ -191,10 +273,10 @@ async function get_file(projectName, fileName) {
 
 
     // hide the modal
-    $('#choose-file-modal').modal('hide');
+    $('#pull-modal').modal('hide');
 
-    // decrypt the file
-    file = decrypt(file);
+    // |TODO decrypt the text.
+    // file = decrypt(file);
 
     // open the file in the editor
     $('#code').html(file);

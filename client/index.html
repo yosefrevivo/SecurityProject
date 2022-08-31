@@ -26,8 +26,8 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             </ul>
             <form class="d-flex" role="search">
-              <button id="pull-btn" class="btn btn-outline-success mx-2 px-3" type="button" onclick="showProjectList()">Pull</button>
-              <button id="push-btn" class="btn btn-outline-primary px-3" type="button">Push</button>
+              <button id="pull-btn" class="btn btn-outline-success mx-2 px-3" type="button" onclick="pull_clicked()">Pull</button>
+              <button id="push-btn" class="btn btn-outline-primary px-3" type="button" onclick="push_clicked()">Push</button>
             </form>
           </div>
         </div>
@@ -46,29 +46,26 @@
             <input class="form-control" type="file" id="USBFile" text="upload USB authenticator file" onchange="updateUSBFile(this)">
           </div>
           <button id="auth-btn" class="btn btn-primary" type="button" onclick="Authenticate()">Authenticate</button>
-          <div id="error-msg" class="btn btn-outline">
-          <span id="error-msg" class="badge text-bg-danger d-none">Authentication failed! pls check that your company usb connected and then try again.</span>
-
+          <div id="error-msg" class="card-footer text-bg-danger my-2">
+          </div>
         </div>
       </div>
     </div>
 
 
-    <div class="container" id="code-body">
+    <div class="container my-3" id="code-body">
       <div class="card mx-5">
-        <div class="card-header">
-        </div>
-        <div class="card-body m-0 p-0">
+        <div class="card-body">
           <pre class="p-0 m-0">
             <code id="code" class="h-100 w-60 m-0 p-5">
             </code>
           </pre>
         </div>
       </div>
-    </container>
+    </div>
 
-    <!-- Choose project Modal -->
-    <div class="modal fade" id="choose-file-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <!-- Pull Modal -->
+    <div class="modal fade" id="pull-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -77,7 +74,7 @@
             </div>
             <div class="modal-body">
 
-                <ol id="projects-list" class="list-group"></ol>
+                <ol id="projects-pull-list" class="list-group"></ol>
 
             </div>
             <div class="modal-footer">
@@ -88,7 +85,7 @@
     </div>
 
     
-    <!-- Pull modal -->
+    <!-- Push modal -->
     <div class="modal fade" id="push-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
       <div class="modal-dialog">
       <div class="modal-content">
@@ -97,17 +94,18 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-
-              <ol id="projects-list" class="list-group"></ol>
-
+              <ol id="projects-push-list" class="list-group"></ol>
+              <div class="m-3">
+                <input class="form-control d-none" type="file" id="file-to-push" text="Please upload file" onchange="updateFileToPush(this)">
+              </div>
           </div>
           <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Push</button>
+          <button id="add-file-btn" type="button" class="btn btn-primary d-none">Add file</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
       </div>
       </div>
-  </div>
+    </div>
 
 
 </body>

@@ -55,8 +55,6 @@ app.get('/api/encrypt', (req, res) => {
 });
 
 
-// TODO think where the merkel tree should get in.
-
 // api for getting the projects list.
 app.get("/api/project_list", async (req, res) => {
     console.log(req.query);
@@ -113,6 +111,18 @@ app.post("/api/post_file", async (req, res) => {
 
 });
 
+
+// api for getting the server pub key.
+app.get("/api/get_server_pub_key", async (req, res) => {
+
+    // get the file public1.pem from the server
+    const filePath = path.join(__dirname, 'public1.pem');
+    const file = fs.readFileSync(filePath);
+    res.send({"serverPublicKey": file.toString().split('\n').splice(1,-1).join('')});
+
+});
+
+
 //! ------------------------------------------------------------
 //! Certificate endpoint
 //! ------------------------------------------------------------
@@ -161,8 +171,11 @@ app.get('/api/get_certificate_chain', (req, res) => {
     // return true;
     res.send(MockCertificateChain);
 });
+
 // api for getting specific file from specific project.
-app.get("api/authenticate", async (req, res) => {
+app.get("/api/authenticate", async (req, res) => {
+
+    console.log(req.query);
 
     // TODO the secret will be encrypted with the public key of the server - need to decrypt it.
 
@@ -171,7 +184,7 @@ app.get("api/authenticate", async (req, res) => {
 
     // if the employee is found, return success message with the employee name.
     if (employee)
-        return res.send({ success: true, name: employee.name });
+        return res.send({ success: true, name: employee });
 
     // if the employee is not found, return error message.
     return res.send({ success: false });
@@ -180,6 +193,11 @@ app.get("api/authenticate", async (req, res) => {
 
 // method for validate the secret key.
 function validateSecret(secret) {
+
+    // todo - Yosef - need to check that it really working!
+    //? how the private and pub key are connected?
+    // decrypt the secret with the private key of the server with RSA.
+    // const decryptedSecret = crypto.privateDecrypt({key: fs.readFileSync('./private1.pem'), passphrase: '123'}, Buffer.from(secret, 'base64'));
 
     // read the employees file.
     const employees = JSON.parse(fs.readFileSync(path.join(__dirname, 'employees.json')));
